@@ -1,55 +1,181 @@
-# NETGEAR GS752TPP SNMP PoE controller — PG3x integration scaffold
+# NETGEAR PoE Controller for Universal Devices eisy
 
-**Status: controller implementation and profile scaffold; NOT a finished PG3x plugin.** PG3x Node.js messaging protocol has not been verified. The CLI can be tested on eisy or a workstation.
+A custom PG3x plugin for controlling individual Power over Ethernet (PoE) ports on NETGEAR managed switches through SNMP.
 
-## Setup
+Designed for Universal Devices eisy running PG3x 3.4.28.
 
-```sh
-npm install
+## Project Status
+
+**Development / Testing**
+
+This project combines a Python PG3x node-server interface with a Node.js SNMP controller. The source includes the integration components, but end-to-end operation on eisy and compatibility with individual NETGEAR firmware versions still require testing.
+
+## Features
+
+- Support for multiple NETGEAR switches
+- Individual SNMP configuration for each switch
+- Physical-to-SNMP port mapping
+- Python interface using `udi_interface`
+- Node.js SNMP communication
+- Intended On, Off, and Query controls for individual PoE ports
+- Intended automatic status polling and IoX integration
+- Read-only mode for safe initial testing
+
+## Supported Hardware
+
+Primary development target:
+
+- NETGEAR GS752TPP managed PoE switch
+
+Other NETGEAR switches supporting compatible standard PoE MIB objects may work but have not been verified.
+
+## Architecture
+
+```text
+Universal Devices eisy
+       |
+       v
+PG3x 3.4.28
+       |
+       v
+Python Node Server (netgear.py)
+       |
+       v
+Node.js SNMP Controller
+       |
+       v
+NETGEAR PoE Switches
+```
+
+## Project Structure
+
+```text
+netgear-eisy-pg3x/
+├── netgear.py
+├── install.sh
+├── requirements.txt
+├── package.json
+├── config.example.json
+├── README.md
+├── README_PG3X.md
+├── POLYGLOT_CONFIG.md
+├── LICENSE
+├── src/
+├── profile/
+└── test/
+```
+
+## Installation
+
+### 1. Requirements
+
+- Universal Devices eisy
+- PG3x 3.4.28
+- Python 3
+- Node.js and npm
+- Network access to NETGEAR switches
+- SNMP enabled on each switch
+
+### 2. Obtain the source code
+
+Clone the repository:
+
+```bash
+git clone https://github.com/cdeslong/netgear-eisy-pg3x.git
+cd netgear-eisy-pg3x
+```
+
+### 3. Install dependencies
+
+```bash
+sh install.sh
+```
+
+### 4. Configure switches
+
+Copy the example configuration:
+
+```bash
 cp config.example.json config.json
-# edit config.json: switch IP, community
-node src/cli.js discover
-node src/cli.js read 10
-npm test
 ```
 
-Never assume PoE row index matches physical port number. Compare SNMP table results with the switch web UI. After a verified mapping and with an unused noncritical port, set `allowWrite:true` and run `node src/cli.js set 10 off` followed by `node src/cli.js set 10 on`.
+Edit `config.json` to define each switch's IP address, SNMP community, and verified port mapping.
 
-## SNMP manual verification
+Do not commit `config.json` containing real credentials to GitHub.
 
-```sh
-snmpwalk -v2c -c YOUR_RO_COMMUNITY SWITCH_IP 1.3.6.1.2.1.105.1.1.1.3
-snmpwalk -v2c -c YOUR_RO_COMMUNITY SWITCH_IP 1.3.6.1.2.1.105.1.1.1.6
-snmpget -v2c -c YOUR_RO_COMMUNITY SWITCH_IP 1.3.6.1.2.1.105.1.1.1.3.1.10
-# Only after verifying exact index, RW access, and safe test port:
-snmpset -v2c -c YOUR_RW_COMMUNITY SWITCH_IP 1.3.6.1.2.1.105.1.1.1.3.1.10 i 2
-snmpset -v2c -c YOUR_RW_COMMUNITY SWITCH_IP 1.3.6.1.2.1.105.1.1.1.3.1.10 i 1
-```
+### 5. Test SNMP communication
 
-## PG3x completion tasks
-
-- Obtain a confirmed PG3x Node.js transport/SDK or implement and validate the PG3x MQTT protocol against a known working node server.
-- Implement PG3x config, addNode, command dispatch, driver updates, polling, stop and reconnection.
-- Validate XML profile command naming and editors on installed IoX firmware.
-- Create a Local Store entry with Node.js executable, install script and repository URL.
-- Confirm profile deployment and 48 individual IoX nodes in PG3x.
-
-## Security
-
-SNMPv2c sends community strings without encryption. Restrict SNMP via ACLs and management VLAN; use SNMPv3 if supported by the eventual plugin. Never publish config.json or community secrets.
-
-## Multiple switches
-The CLI supports `switches` configuration with per-switch `host`, `community`, and `portMap`.
-The physical-to-SNMP mapping examples in config.example.json are placeholders and must be verified separately on each switch.
-
-```sh
+```bash
 node src/cli.js switches
 node src/cli.js discover switch1
-node src/cli.js discover switch2
-node src/cli.js read switch1 10
-node src/cli.js read switch2 10
-node src/cli.js set switch2 10 off
+node src/cli.js read switch1 1
 ```
 
-For writes, set BOTH top-level `allowWrite` and that switch's `allowWrite` to `true`, only after verification. The CLI uses one SNMP session per invocation and closes it after use.
-This update does NOT implement the PG3x messaging adapter or multi-switch IoX nodes.
+Confirm that the returned information matches the NETGEAR switch management interface.
+
+### 6. PG3x Local Store
+
+Create a Local Store entry using the following proposed settings:
+
+| Setting | Value |
+|---|---|
+| Name | NetgearPoE |
+| Language | Python |
+| Executable | netgear.py |
+| Repository | https://github.com/cdeslong/netgear-eisy-pg3x |
+| Branch | main |
+| Documentation | README.md |
+| License | LICENSE |
+
+Follow `README_PG3X.md` for additional PG3x development and installation information.
+
+The PG3x installation lifecycle, node registration, and profile deployment must be validated before production use.
+
+## SNMP Port Mapping
+
+Each physical Ethernet port must be mapped to the correct SNMP PoE group and index.
+
+Example:
+
+```json
+"portMap": {
+  "1": { "group": 1, "index": 1 },
+  "2": { "group": 1, "index": 2 },
+  "10": { "group": 1, "index": 10 }
+}
+```
+
+These are example values. Do not assume physical port numbers match SNMP indexes without verification.
+
+## Safety and Security
+
+- Keep SNMP writes disabled during initial setup.
+- Verify all physical-to-SNMP mappings.
+- Use a noncritical port for initial write testing.
+- Restrict SNMP access to trusted management devices.
+- Never publish SNMP community strings or credentials.
+- SNMPv2c community strings are not encrypted.
+
+## Development Roadmap
+
+- [x] Node.js SNMP controller
+- [x] Multi-switch configuration support
+- [x] Python PG3x interface scaffold
+- [ ] Validate PG3x installation on eisy
+- [ ] Verify switch and port node registration
+- [ ] Verify On/Off/Query commands
+- [ ] Verify status polling and reconnection
+- [ ] Verify NETGEAR firmware-specific SNMP writes
+- [ ] Complete production testing
+
+## License
+
+MIT License. See [LICENSE](LICENSE).
+
+## Author
+
+cdeslong
+
+## Disclaimer
+
+This is an independent community development project and is not affiliated with or endorsed by NETGEAR or Universal Devices.
