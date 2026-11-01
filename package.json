@@ -1,0 +1,1 @@
+{"name":"netgear-eisy-poe","version":"0.1.0","private":true,"description":"NETGEAR PoE SNMP controller and PG3x integration scaffold","main":"src/cli.js","scripts":{"test":"node --test","verify":"node src/cli.js discover"},"dependencies":{"net-snmp":"^3.13.0"},"engines":{"node":">=18"}}

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<nodeDefs>
+ <nodeDef id="POECTRL" nls="POECTRL"><sts><st id="ST" editor="POEBOOL"/></sts><cmds><accepts><cmd id="QUERY"/></accepts></cmds></nodeDef>
+ <nodeDef id="POESW" nls="POESW"><sts><st id="ST" editor="POEBOOL"/></sts><cmds><accepts><cmd id="QUERY"/></accepts></cmds></nodeDef>
+ <nodeDef id="POEPORT" nls="POEPORT"><sts><st id="ST" editor="POEBOOL"/><st id="GV0" editor="POEDETECT"/></sts><cmds><accepts><cmd id="DON"/><cmd id="DOF"/><cmd id="QUERY"/></accepts></cmds></nodeDef>
+</nodeDefs>
